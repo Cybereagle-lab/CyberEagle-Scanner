@@ -30,6 +30,12 @@ An advanced website scanning tool for ethical hacking and penetration testing.
    chmod +x cybereagle.py
    dos2unix cybereagle.py
    
+   ## Replace http://example.com with your target URL.
+
+   ## Replace wordlist.txt with the path to your subdomain wordlist file.
+   
+        ./cybereagle.py http://example.com --subdomains wordlist.txt
+   
 ## Usage 🚀
 
 Run the tool with the following command:
