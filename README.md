@@ -20,7 +20,13 @@ An advanced website scanning tool for ethical hacking and penetration testing.
 ### Prerequisites
 - Python 3.x
 - `pip` package manager
+- `wkhtmltopdf` (for PDF report generation)
+- ChromeDriver (for headless browsing)
 
+### Steps
+1. **Install Python Dependencies**:
+   ```bash
+   pip install -r requirements.txt
 ### Steps
 1. Clone the repository:
    ```bash
