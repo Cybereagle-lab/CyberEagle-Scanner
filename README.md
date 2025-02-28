@@ -53,6 +53,7 @@ Run the tool with the following command:
           
 ## Example
 Enter the target URL (e.g., http://example.com): http://example.com
+
 CyberEagle-Scanner/
 ├── cybereagle.py
 ├── requirements.txt
