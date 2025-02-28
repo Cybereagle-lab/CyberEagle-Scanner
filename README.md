@@ -28,13 +28,14 @@ An advanced website scanning tool for ethical hacking and penetration testing.
    cd CyberEagle-Scanner
    pip install -r requirements.txt
    chmod +x cybereagle.py
-
+   dos2unix cybereagle.py
+   
 ## Usage 🚀
 
 Run the tool with the following command:
 
 ./cybereagle.py
-
+          
 ## Example
 Enter the target URL (e.g., http://example.com): http://example.com
 
