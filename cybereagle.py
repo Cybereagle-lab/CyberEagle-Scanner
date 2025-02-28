@@ -38,6 +38,53 @@ def port_scan(domain, port):
         with thread_lock:
             print(f"[-] Error scanning port {port}: {e}")
 
+# Function to check for SQL injection vulnerability
+def check_sql_injection(url):
+    payloads = ["'", "\"", "' OR '1'='1", "\" OR \"1\"=\"1"]
+    for payload in payloads:
+        test_url = f"{url}{payload}"
+        try:
+            response = requests.get(test_url, headers=HEADERS, timeout=10)
+            if "error" in response.text.lower() or "syntax" in response.text.lower():
+                with thread_lock:
+                    vulnerabilities.append(f"SQL Injection vulnerability found at: {test_url}")
+                    print(f"[+] SQL Injection vulnerability found at: {test_url}")
+                break
+        except Exception as e:
+            with thread_lock:
+                print(f"[-] Error checking SQL Injection: {e}")
+
+# Function to check for XSS vulnerability
+def check_xss(url):
+    payload = "<script>alert('XSS')</script>"
+    test_url = f"{url}?q={payload}"
+    try:
+        response = requests.get(test_url, headers=HEADERS, timeout=10)
+        if payload in response.text:
+            with thread_lock:
+                vulnerabilities.append(f"XSS vulnerability found at: {test_url}")
+                print(f"[+] XSS vulnerability found at: {test_url}")
+    except Exception as e:
+        with thread_lock:
+            print(f"[-] Error checking XSS: {e}")
+
+# Function to check for insecure headers
+def check_insecure_headers(url):
+    try:
+        response = requests.get(url, headers=HEADERS, timeout=10)
+        headers = response.headers
+        if "X-Frame-Options" not in headers:
+            with thread_lock:
+                vulnerabilities.append(f"Missing X-Frame-Options header at: {url}")
+                print(f"[+] Missing X-Frame-Options header at: {url}")
+        if "Content-Security-Policy" not in headers:
+            with thread_lock:
+                vulnerabilities.append(f"Missing Content-Security-Policy header at: {url}")
+                print(f"[+] Missing Content-Security-Policy header at: {url}")
+    except Exception as e:
+        with thread_lock:
+            print(f"[-] Error checking headers: {e}")
+
 # Function to crawl the website
 def crawl_website(url, max_pages=10):
     if url in visited_urls or len(visited_urls) >= max_pages:
@@ -46,8 +93,17 @@ def crawl_website(url, max_pages=10):
     print(f"[*] Crawling: {url}")
 
     try:
+        # Ensure the URL has a scheme
+        if not url.startswith(('http://', 'https://')):
+            url = 'https://' + url
+
         response = requests.get(url, headers=HEADERS, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
+
+        # Check for vulnerabilities
+        check_sql_injection(url)
+        check_xss(url)
+        check_insecure_headers(url)
 
         # Extract and follow links
         for link in soup.find_all("a", href=True):
@@ -58,10 +114,27 @@ def crawl_website(url, max_pages=10):
         with thread_lock:
             print(f"[-] Error crawling {url}: {e}")
 
+# Function to save results to a file
+def save_results(filename="scan_results.txt"):
+    with open(filename, "w") as file:
+        file.write("Website Scan Results:\n\n")
+        file.write("Vulnerabilities Found:\n")
+        for vuln in vulnerabilities:
+            file.write(f"- {vuln}\n")
+        file.write("\nVisited URLs:\n")
+        for url in visited_urls:
+            file.write(f"- {url}\n")
+    print(f"[+] Results saved to {filename}")
+
 # Main function
 def main():
     display_banner()
     target_url = input("Enter the target URL (e.g., http://example.com): ").strip()
+
+    # Ensure the URL has a scheme
+    if not target_url.startswith(('http://', 'https://')):
+        target_url = 'https://' + target_url
+
     target_domain = urlparse(target_url).netloc
 
     print("\n[+] Starting port scan...")
@@ -74,8 +147,11 @@ def main():
     for thread in threads:
         thread.join()
 
-    print("\n[+] Crawling website...")
+    print("\n[+] Crawling website and checking for vulnerabilities...")
     crawl_website(target_url, max_pages=10)
+
+    print("\n[+] Saving results...")
+    save_results()
 
     print("\n[+] Scan complete!")
 
