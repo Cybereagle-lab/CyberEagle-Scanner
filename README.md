@@ -16,7 +16,10 @@ An advanced website scanning tool for ethical hacking.
 ## bash
 
 git clone https://github.com/your-username/CyberEagle-Scanner.git
+
 cd CyberEagle-Scanner
+
 chmod +x cybereagle.py
+
 ./cybereagle.py
  
