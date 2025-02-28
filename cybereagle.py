@@ -3,9 +3,17 @@
 import requests
 import socket
 import threading
+import ssl
+import argparse
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 from pyfiglet import Figlet
+from concurrent.futures import ThreadPoolExecutor
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+import time
+import json
+import pdfkit
 
 # Global variables
 visited_urls = set()
@@ -37,6 +45,20 @@ def port_scan(domain, port):
     except Exception as e:
         with thread_lock:
             print(f"[-] Error scanning port {port}: {e}")
+
+# Function to check SSL/TLS vulnerabilities
+def check_ssl_tls(url):
+    try:
+        hostname = urlparse(url).netloc
+        context = ssl.create_default_context()
+        with socket.create_connection((hostname, 443)) as sock:
+            with context.wrap_socket(sock, server_hostname=hostname) as ssock:
+                cert = ssock.getpeercert()
+                print(f"[+] SSL/TLS Certificate Info for {hostname}:")
+                print(cert)
+    except Exception as e:
+        with thread_lock:
+            print(f"[-] Error checking SSL/TLS for {url}: {e}")
 
 # Function to check for SQL injection vulnerability
 def check_sql_injection(url):
@@ -114,24 +136,79 @@ def crawl_website(url, max_pages=10):
         with thread_lock:
             print(f"[-] Error crawling {url}: {e}")
 
-# Function to save results to a file
-def save_results(filename="scan_results.txt"):
+# Function to enumerate subdomains
+def enumerate_subdomains(domain, wordlist):
+    print(f"[*] Enumerating subdomains for {domain}...")
+    with open(wordlist, "r") as file:
+        subdomains = file.read().splitlines()
+
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        for subdomain in subdomains:
+            full_domain = f"{subdomain}.{domain}"
+            executor.submit(check_subdomain, full_domain)
+
+def check_subdomain(subdomain):
+    try:
+        ip = socket.gethostbyname(subdomain)
+        with thread_lock:
+            print(f"[+] Found subdomain: {subdomain} -> {ip}")
+    except socket.error:
+        pass
+
+# Function to bruteforce directories and files
+def bruteforce_directories(url, wordlist):
+    print(f"[*] Bruteforcing directories on {url}...")
+    with open(wordlist, "r") as file:
+        directories = file.read().splitlines()
+
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        for directory in directories:
+            full_url = urljoin(url, directory)
+            executor.submit(check_directory, full_url)
+
+def check_directory(url):
+    try:
+        response = requests.get(url, headers=HEADERS, timeout=10)
+        if response.status_code == 200:
+            with thread_lock:
+                print(f"[+] Found directory: {url}")
+    except Exception as e:
+        with thread_lock:
+            print(f"[-] Error checking directory {url}: {e}")
+
+# Function to generate an HTML report
+def generate_html_report(filename="report.html"):
     with open(filename, "w") as file:
-        file.write("Website Scan Results:\n\n")
-        file.write("Vulnerabilities Found:\n")
+        file.write("<h1>CyberEagle Scanner Report</h1>\n")
+        file.write("<h2>Vulnerabilities Found</h2>\n<ul>\n")
         for vuln in vulnerabilities:
-            file.write(f"- {vuln}\n")
-        file.write("\nVisited URLs:\n")
+            file.write(f"<li>{vuln}</li>\n")
+        file.write("</ul>\n<h2>Visited URLs</h2>\n<ul>\n")
         for url in visited_urls:
-            file.write(f"- {url}\n")
-    print(f"[+] Results saved to {filename}")
+            file.write(f"<li>{url}</li>\n")
+        file.write("</ul>\n")
+    print(f"[+] HTML report saved to {filename}")
+
+# Function to generate a PDF report
+def generate_pdf_report(filename="report.pdf"):
+    html_report = "report.html"
+    generate_html_report(html_report)
+    pdfkit.from_file(html_report, filename)
+    print(f"[+] PDF report saved to {filename}")
 
 # Main function
 def main():
     display_banner()
-    target_url = input("Enter the target URL (e.g., http://example.com): ").strip()
 
-    # Ensure the URL has a scheme
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="CyberEagle Scanner - Advanced Website Scanning Tool")
+    parser.add_argument("target", help="Target URL or domain (e.g., http://example.com or example.com)")
+    parser.add_argument("--subdomains", help="Path to subdomain wordlist file", default=None)
+    parser.add_argument("--directories", help="Path to directory wordlist file", default=None)
+    parser.add_argument("--report", help="Generate report in HTML or PDF format", choices=["html", "pdf"], default=None)
+    args = parser.parse_args()
+
+    target_url = args.target
     if not target_url.startswith(('http://', 'https://')):
         target_url = 'https://' + target_url
 
@@ -147,11 +224,25 @@ def main():
     for thread in threads:
         thread.join()
 
+    print("\n[+] Checking SSL/TLS configuration...")
+    check_ssl_tls(target_url)
+
+    if args.subdomains:
+        print("\n[+] Enumerating subdomains...")
+        enumerate_subdomains(target_domain, args.subdomains)
+
+    if args.directories:
+        print("\n[+] Bruteforcing directories...")
+        bruteforce_directories(target_url, args.directories)
+
     print("\n[+] Crawling website and checking for vulnerabilities...")
     crawl_website(target_url, max_pages=10)
 
-    print("\n[+] Saving results...")
-    save_results()
+    if args.report:
+        if args.report == "html":
+            generate_html_report()
+        elif args.report == "pdf":
+            generate_pdf_report()
 
     print("\n[+] Scan complete!")
 
