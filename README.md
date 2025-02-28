@@ -29,12 +29,15 @@ An advanced website scanning tool for ethical hacking and penetration testing.
    pip install -r requirements.txt
    chmod +x cybereagle.py
    dos2unix cybereagle.py
+   ## Install wkhtmltopdf (for PDF generation):
+    ## pdfkit requires wkhtmltopdf to generate PDFs. Install it using:
+        sudo apt install wkhtmltopdf
    
    ## Replace http://example.com with your target URL.
 
    ## Replace wordlist.txt with the path to your subdomain wordlist file.
    
-        ./cybereagle.py http://example.com --subdomains wordlist.txt
+        ./cybereagle.py http://example.com --subdomains subdomains.txt --directories directories.txt --report pdf
    
 ## Usage 🚀
 
@@ -44,7 +47,13 @@ Run the tool with the following command:
           
 ## Example
 Enter the target URL (e.g., http://example.com): http://example.com
-
+CyberEagle-Scanner/
+├── cybereagle.py
+├── requirements.txt
+├── README.md
+├── subdomains.txt
+├── directories.txt
+└── report.pdf (generated after running the script)
 ## Contributing 🤝
 We welcome contributions! Here's how you can help:
 
