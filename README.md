@@ -26,25 +26,16 @@ An advanced website scanning tool for ethical hacking and penetration testing.
    ```bash
    git clone https://github.com/your-username/CyberEagle-Scanner.git
    cd CyberEagle-Scanner
-Install dependencies:
+   pip install -r requirements.txt
+   chmod +x cybereagle.py
 
-## bash
+## Usage 🚀
 
-pip install -r requirements.txt
-
-Make the script executable:
-
-## bash
-chmod +x cybereagle.py
-
-Usage 🚀
 Run the tool with the following command:
 
-## bash
 ./cybereagle.py
 
-Example
-## bash
+## Example
 Enter the target URL (e.g., http://example.com): http://example.com
 
 ## Contributing 🤝
